@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <cstr.h>
 #include <cutelog.h>
 
 /* Emojis */
@@ -48,7 +47,6 @@ static char *get_time(){
 }
 
 static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap){
-	cstr_t toprint = NULL;
 	int r = -1;
 	char *space = "";
 	if(ctx == NULL || !fmt) 
@@ -100,19 +98,8 @@ static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap){
 		}
 	}
 	r += fprintf(ctx->output, " )%s: ",space);	
-
-	if(ctx->mode == cutelog_non_multiline_mode && strstr("\n", fmt)){
-		toprint = cstr_new();
-		while(*fmt){
-			cstr_append_char(toprint,
-					(*fmt == '\n') ? ' ' : *fmt);
-			++fmt;
-		}
-		r += vfprintf(ctx->output, cstr_digest(toprint), ap);
-		cstr_free(toprint);
-	}else{
-		r += vfprintf(ctx->output, fmt, ap);	
-	}
+	
+	r += vfprintf(ctx->output, fmt, ap);	
 
 	if(ctx->mode == cutelog_non_multiline_mode){
 		if(ctx->prev_print_size > r){
@@ -188,9 +175,8 @@ int cutelog_safe_finish(cutelog_t ctx){
 	if(ctx == NULL)
 		return -1;
 
-	if(ctx->mode == cutelog_non_multiline_mode){
+	if(ctx->mode == cutelog_non_multiline_mode)
 		fprintf(ctx->output, "\n");	
-	}
 	return 0;
 }
 
