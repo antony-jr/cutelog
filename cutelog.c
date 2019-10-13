@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 #include <cstr.h>
 #include <cutelog.h>
@@ -47,15 +48,14 @@ static char *get_time(){
 }
 
 static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap){
-	cstr_t toprint = cstr_new();
+	cstr_t toprint = NULL;
 	int r = -1;
 	char *space = "";
-	if(ctx == NULL || !fmt || toprint == NULL) 
+	if(ctx == NULL || !fmt) 
 		return r;
 	
 	if(ctx->mode == cutelog_non_multiline_mode)
 		fflush(ctx->output);
-	
 	
 	r += fprintf(ctx->output, " [ %s ] ",
 					get_time());		
@@ -101,7 +101,8 @@ static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap){
 	}
 	r += fprintf(ctx->output, " )%s: ",space);	
 
-	if(ctx->mode == cutelog_non_multiline_mode){
+	if(ctx->mode == cutelog_non_multiline_mode && strstr("\n", fmt)){
+		toprint = cstr_new();
 		while(*fmt){
 			cstr_append_char(toprint,
 					(*fmt == '\n') ? ' ' : *fmt);
@@ -113,16 +114,15 @@ static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap){
 		r += vfprintf(ctx->output, fmt, ap);	
 	}
 
-	/* footer. */
-	switch(type){
-		case progress:
-			r+= fprintf(ctx->output, "... ");
-			break;
-		default:
-			break;
-	}
 	if(ctx->mode == cutelog_non_multiline_mode){
-		r+= fprintf(ctx->output, "\r");
+		if(ctx->prev_print_size > r){
+			do{
+				int fill = ctx->prev_print_size - r + 4;
+				while(fill--)
+					putc(' ', ctx->output);
+			}while(0);
+		}
+		r+= fprintf(ctx->output, "\r\r");
 	}else
 		r+= fprintf(ctx->output, "\n");
 	return r + 1;
@@ -169,14 +169,16 @@ int cutelog_mode(cutelog_t ctx, cutelog_mode_t mode){
 		fflush(ctx->output);
 		/* avoid overlapping between multiline and non multiline. */
 		do{ /* code block in c89 version, do not take this away, its not useless. */
-			int to_fill = ctx->prev_print_size * 2;
-			cstr_t fill = cstr_new();
-			while(to_fill--)
-				cstr_append_char(fill, ' ');	
-			fprintf(ctx->output, "%s\r", cstr_digest(fill));
+			int fill = ctx->prev_print_size + 4;
+			while(fill--)
+				putc(' ', ctx->output);
+			fprintf(ctx->output, "\r\r");
 			fflush(ctx->output);
-			cstr_free(fill);
 		}while(0);	
+	}else{
+		fflush(ctx->output);
+		fprintf(ctx->output, "\r\r");
+		fflush(ctx->output);
 	}
 	ctx->mode = mode;
 	return 0;
@@ -187,18 +189,7 @@ int cutelog_safe_finish(cutelog_t ctx){
 		return -1;
 
 	if(ctx->mode == cutelog_non_multiline_mode){
-		fflush(ctx->output);
-		/* avoid overlapping between multiline and non multiline. */
-		do{ /* code block in c89 version, do not take this away, its not useless. */
-			int to_fill = ctx->prev_print_size * 2;
-			cstr_t fill = cstr_new();
-			while(to_fill--)
-				cstr_append_char(fill, ' ');	
-			fprintf(ctx->output, "%s\r", cstr_digest(fill));
-			fflush(ctx->output);
-			cstr_free(fill);
-		}while(0);	
-	
+		fprintf(ctx->output, "\n");	
 	}
 	return 0;
 }
