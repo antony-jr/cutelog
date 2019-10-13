@@ -5,9 +5,9 @@ struct _cutelog_t;
 typedef struct _cutelog_t* cutelog_t;
 
 typedef enum {
-	cutelog_no_mode,
-	cutelog_multiline_mode,
-	cutelog_non_multiline_mode
+    cutelog_no_mode,
+    cutelog_multiline_mode,
+    cutelog_non_multiline_mode
 } cutelog_mode_t;
 
 cutelog_t cutelog_new();
