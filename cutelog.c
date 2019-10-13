@@ -65,22 +65,27 @@ static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap){
 			break;
 		case success:
 			r += fprintf(ctx->output, "(%s \033[32mSuccess\033[0m", heavy_check_mark_emoji);
+			space = "  ";
 			break;
 		case fail:
 			r += fprintf(ctx->output, "(%s \033[31mFailed\033[0m", crossmark_emoji);
-			space = "  ";
+			space = "   ";
 			break;
 		case info:
 			r += fprintf(ctx->output, "(%s \033[34mInfo\033[0m", lightbulb_emoji);
+			space = "     ";
 			break;
 		case fatal:
 			r += fprintf(ctx->output, "(%s \033[47;31mFatal\033[0m", stopsign_emoji);
+		        space = "    ";	
 			break;
 		case warning:
 			r += fprintf(ctx->output, "(%s \033[33mWarning\033[0m", warning_emoji);
+			space = "  ";
 			break;
 		case debug:
 			r += fprintf(ctx->output, "(%s \033[36mDebug\033[0m", debug_emoji);
+			space = "    ";
 			break;	
 		default:
 			r += fprintf(ctx->output, "(Unknown");
@@ -181,8 +186,20 @@ int cutelog_safe_finish(cutelog_t ctx){
 	if(ctx == NULL)
 		return -1;
 
-	if(ctx->mode == cutelog_non_multiline_mode)
-		fprintf(ctx->output, "\n");
+	if(ctx->mode == cutelog_non_multiline_mode){
+		fflush(ctx->output);
+		/* avoid overlapping between multiline and non multiline. */
+		do{ /* code block in c89 version, do not take this away, its not useless. */
+			int to_fill = ctx->prev_print_size * 2;
+			cstr_t fill = cstr_new();
+			while(to_fill--)
+				cstr_append_char(fill, ' ');	
+			fprintf(ctx->output, "%s\r", cstr_digest(fill));
+			fflush(ctx->output);
+			cstr_free(fill);
+		}while(0);	
+	
+	}
 	return 0;
 }
 
