@@ -49,6 +49,7 @@ static char *get_time(){
 static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap){
 	cstr_t toprint = cstr_new();
 	int r = -1;
+	char *space = "";
 	if(ctx == NULL || !fmt || toprint == NULL) 
 		return r;
 	
@@ -67,12 +68,13 @@ static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap){
 			break;
 		case fail:
 			r += fprintf(ctx->output, "(%s \033[31mFailed\033[0m", crossmark_emoji);
+			space = "  ";
 			break;
 		case info:
 			r += fprintf(ctx->output, "(%s \033[34mInfo\033[0m", lightbulb_emoji);
 			break;
 		case fatal:
-			r += fprintf(ctx->output, "(%s \033[35mFatal\033[0m", stopsign_emoji);
+			r += fprintf(ctx->output, "(%s \033[47;31mFatal\033[0m", stopsign_emoji);
 			break;
 		case warning:
 			r += fprintf(ctx->output, "(%s \033[33mWarning\033[0m", warning_emoji);
@@ -92,7 +94,7 @@ static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap){
 				(ctx->prog_series_pos + 1) % prog_series_len;
 		}
 	}
-	r += fprintf(ctx->output, " ): ");	
+	r += fprintf(ctx->output, " )%s: ",space);	
 
 	if(ctx->mode == cutelog_non_multiline_mode){
 		while(*fmt){
@@ -114,22 +116,6 @@ static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap){
 		default:
 			break;
 	}
-	
-	/* avoid overlapping between multiline and non multiline. */
-	if(ctx->prev_mode == cutelog_non_multiline_mode &&
-	   ctx->mode == cutelog_multiline_mode && 
-	   ctx->prev_print_size > r){
-		do{ /* code block in c89 version, do not take this away, its not useless. */
-			int to_fill = ctx->prev_print_size - r;
-			cstr_t fill = cstr_new();
-			r += to_fill;
-			while(to_fill--)
-				cstr_append_char(fill, ' ');
-			fprintf(ctx->output, "%s", cstr_digest(fill));
-			cstr_free(fill);
-		}while(0);	
-	}
-
 	if(ctx->mode == cutelog_non_multiline_mode){
 		r+= fprintf(ctx->output, "\r");
 	}else
@@ -178,16 +164,15 @@ int cutelog_mode(cutelog_t ctx, cutelog_mode_t mode){
 		fflush(ctx->output);
 		/* avoid overlapping between multiline and non multiline. */
 		do{ /* code block in c89 version, do not take this away, its not useless. */
-			int to_fill = ctx->prev_print_size;
+			int to_fill = ctx->prev_print_size * 2;
 			cstr_t fill = cstr_new();
-			r += to_fill;
 			while(to_fill--)
-				cstr_append_char(fill, ' ');
-			fprintf(ctx->output, "%s", cstr_digest(fill));
+				cstr_append_char(fill, ' ');	
+			fprintf(ctx->output, "%s\r", cstr_digest(fill));
+			fflush(ctx->output);
 			cstr_free(fill);
 		}while(0);	
 	}
-	ctx->prev_mode = ctx->mode;
 	ctx->mode = mode;
 	return 0;
 }
