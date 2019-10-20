@@ -24,6 +24,10 @@
 #ifndef CUTELOG_H_INCLUDED
 #define CUTELOG_H_INCLUDED
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _cutelog_t;
 typedef struct _cutelog_t* cutelog_t;
 
@@ -48,5 +52,8 @@ int cutelog_fatal(cutelog_t, const char*, ...);
 int cutelog_warning(cutelog_t, const char*, ...);
 int cutelog_debug(cutelog_t, const char*, ...);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CUTELOG_H_INCLUDED */

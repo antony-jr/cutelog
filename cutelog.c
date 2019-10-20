@@ -71,7 +71,7 @@ static char *get_time() {
 
 static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap) {
     int r = -1;
-    char *space = "";
+    char *space = (char*)"";
     if(ctx == NULL || !fmt)
         return r;
 
@@ -86,27 +86,27 @@ static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap) 
         break;
     case success:
         r += fprintf(ctx->output, "(%s \033[32mSuccess\033[0m", heavy_check_mark_emoji);
-        space = "  ";
+        space = (char*)"  ";
         break;
     case fail:
         r += fprintf(ctx->output, "(%s \033[31mFailed\033[0m", crossmark_emoji);
-        space = "   ";
+        space = (char*)"   ";
         break;
     case info:
         r += fprintf(ctx->output, "(%s \033[34mInfo\033[0m", lightbulb_emoji);
-        space = "     ";
+        space = (char*)"     ";
         break;
     case fatal:
         r += fprintf(ctx->output, "(%s \033[47;31mFatal\033[0m", stopsign_emoji);
-        space = "    ";
+        space = (char*)"    ";
         break;
     case warning:
         r += fprintf(ctx->output, "(%s \033[33mWarning\033[0m", warning_emoji);
-        space = "  ";
+        space = (char*)"  ";
         break;
     case debug:
         r += fprintf(ctx->output, "(%s \033[36mDebug\033[0m", debug_emoji);
-        space = "    ";
+        space = (char*)"    ";
         break;
     default:
         r += fprintf(ctx->output, "(Unknown");
@@ -142,7 +142,7 @@ static int print(cutelog_t ctx, print_type_t type, const char *fmt, va_list ap) 
 #define CREATE_FUNCTION(name) int cutelog_##name(cutelog_t ctx, const char *fmt, ...){ \
 	                         va_list ap; \
 	                         int r = 0; \
-	                         va_start(ap, NULL); \
+	                         va_start(ap, fmt); \
 	                         r = print(ctx, name , fmt, ap); \
 	                         ctx->prev_print_size = r; \
 	                         va_end(ap); \
@@ -155,10 +155,10 @@ cutelog_t cutelog_new() {
 }
 
 cutelog_t cutelog_new_ex(void *out) {
-    cutelog_t r = calloc(1, CUTELOG_SZ);
+    cutelog_t r = (struct _cutelog_t*)calloc(1, CUTELOG_SZ);
     if(r == NULL)
         return NULL;
-    r->output = (!out) ? stdout : out;
+    r->output = (!out) ? (FILE*)stdout : (FILE*)out;
     r->mode = cutelog_multiline_mode; /* default */
     return r;
 }
@@ -210,4 +210,3 @@ CREATE_FUNCTION(info);
 CREATE_FUNCTION(fatal);
 CREATE_FUNCTION(warning);
 CREATE_FUNCTION(debug);
-
